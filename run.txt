@@ -1,0 +1,5 @@
+START:
+Start-Process .\venv\Scripts\pythonw.exe -ArgumentList "your_script.py"
+
+STOP:
+Stop-Process -Name "pythonw"
