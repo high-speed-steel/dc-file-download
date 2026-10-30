@@ -36,35 +36,35 @@ class Settings:
 def load_settings() -> Settings:
     if not CONFIG_PATH.is_file():
         raise RuntimeError(
-            f"找不到 {CONFIG_PATH}。請複製 config.example.json 並命名為 config.json，填入設定。"
+            f"Missing {CONFIG_PATH}. Copy config.example.json to config.json and fill in the settings."
         )
     try:
         raw: Any = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise RuntimeError(f"讀取 config.json 失敗：{exc}") from exc
+        raise RuntimeError(f"Failed to read config.json: {exc}") from exc
     if not isinstance(raw, dict):
-        raise RuntimeError("config.json 最外層必須是 JSON 物件。")
+        raise RuntimeError("The top level of config.json must be a JSON object.")
 
     token = raw.get("bot_token")
     if not isinstance(token, str) or not token.strip() or token == "DISCORD_BOT_TOKEN_HERE":
-        raise RuntimeError("請在 config.json 的 bot_token 填入 Discord Bot Token。")
+        raise RuntimeError("Set bot_token in config.json to your Discord bot token.")
     try:
         user_id = int(raw["allowed_user_id"])
         timeout = float(raw.get("interaction_timeout_seconds", 180))
     except (KeyError, TypeError, ValueError) as exc:
-        raise RuntimeError("allowed_user_id 必須是數字，逾時秒數必須是正數。") from exc
+        raise RuntimeError("allowed_user_id must be an integer and the timeout must be a positive number.") from exc
     if user_id <= 0 or timeout <= 0:
-        raise RuntimeError("allowed_user_id 與 interaction_timeout_seconds 必須大於 0。")
+        raise RuntimeError("allowed_user_id and interaction_timeout_seconds must be greater than zero.")
     paths = raw.get("default_paths")
     if not isinstance(paths, dict) or not paths:
-        raise RuntimeError("default_paths 必須至少包含一筆『路徑名稱: 絕對路徑』。")
+        raise RuntimeError("default_paths must contain at least one label-to-absolute-path entry.")
     resolved: dict[str, Path] = {}
     for label, value in paths.items():
         if not isinstance(label, str) or not label.strip() or not isinstance(value, str) or not value.strip():
-            raise RuntimeError("default_paths 的名稱與路徑都必須是非空字串。")
+            raise RuntimeError("Each default_paths label and path must be a non-empty string.")
         path = Path(os.path.expandvars(os.path.expanduser(value))).resolve()
         if not path.is_absolute():
-            raise RuntimeError(f"預設路徑必須是絕對路徑：{value}")
+            raise RuntimeError(f"Default path must be absolute: {value}")
         resolved[label] = path
     return Settings(token.strip(), user_id, timeout, resolved)
 
@@ -72,7 +72,7 @@ def load_settings() -> Settings:
 def safe_folder_name(value: str) -> str:
     cleaned = INVALID_FOLDER_CHARS.sub("_", value).strip().strip(".")
     if not cleaned or cleaned in {".", ".."}:
-        raise ValueError("資料夾名稱不可為空白或只有點號。")
+        raise ValueError("Folder name cannot be empty or consist only of periods.")
     return cleaned[:120]
 
 
@@ -80,13 +80,13 @@ def parse_user_path(value: str) -> Path:
     """Parse a pasted Windows or POSIX absolute path without losing spaces."""
     cleaned = value.strip().strip('"').strip()
     if not cleaned:
-        raise ValueError("路徑不可空白。")
+        raise ValueError("Path cannot be empty.")
     cleaned = os.path.expandvars(os.path.expanduser(cleaned))
     # Windows accepts both slash styles. On Windows pathlib normalizes copied
     # Explorer paths such as C:\\Users\\name\\Downloads directly.
     path = Path(cleaned)
     if not path.is_absolute():
-        raise ValueError("請貼上完整的絕對路徑，例如 C:\\Users\\name\\Downloads。")
+        raise ValueError("Enter a full absolute path, for example C:\\Users\\name\\Downloads.")
     return path.resolve()
 
 
@@ -212,9 +212,9 @@ class ManualPathModal(discord.ui.Modal, title="輸入儲存路徑"):
         await self.flow.choose_base(interaction, path)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
-        LOGGER.error("路徑輸入視窗發生錯誤：%s", error, exc_info=error)
+        LOGGER.error("Path input modal failed: %s", error, exc_info=error)
         if not interaction.response.is_done():
-            await interaction.response.send_message("路徑輸入發生錯誤，請取消本次流程後重試。", ephemeral=True)
+            await interaction.response.send_message("Path input failed. Cancel this flow and try again.", ephemeral=True)
 
 
 class FolderChoiceView(discord.ui.View):
@@ -255,9 +255,9 @@ class ManualFolderModal(discord.ui.Modal, title="建立自訂資料夾"):
         await self.flow.finish(interaction, self.flow.base_path / folder, timed_out=False)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
-        LOGGER.error("資料夾名稱輸入視窗發生錯誤：%s", error, exc_info=error)
+        LOGGER.error("Folder name modal failed: %s", error, exc_info=error)
         if not interaction.response.is_done():
-            await interaction.response.send_message("輸入發生錯誤，請取消本次流程後重試。", ephemeral=True)
+            await interaction.response.send_message("Input failed. Cancel this flow and try again.", ephemeral=True)
 
 
 class DownloadFlow:
@@ -292,7 +292,7 @@ class DownloadFlow:
         except asyncio.CancelledError:
             raise
         except Exception:
-            LOGGER.exception("逾時自動存檔失敗")
+            LOGGER.exception("Timeout fallback download failed")
             await self._notify_error("逾時自動存檔失敗，請確認預設路徑可寫入及磁碟空間充足。")
 
     async def _disable_prompt(self) -> None:
@@ -301,7 +301,7 @@ class DownloadFlow:
         try:
             await self.prompt.edit(view=None)
         except discord.HTTPException:
-            LOGGER.debug("無法移除互動訊息元件", exc_info=True)
+            LOGGER.debug("Failed to remove interaction components", exc_info=True)
 
     async def choose_base(self, interaction: discord.Interaction, path: Path) -> None:
         async with self.lock:
@@ -344,7 +344,7 @@ class DownloadFlow:
                 original_name = attachment.filename
                 download_name = attachment_filename(attachment)
                 if download_name != original_name:
-                    LOGGER.info("已還原附件顯示檔名：%r -> %r", original_name, download_name)
+                    LOGGER.info("Restored attachment display filename: %r -> %r", original_name, download_name)
                 target = unique_destination(destination, download_name)
                 await attachment.save(target)
                 saved.append((target.name, target.stat().st_size))
@@ -353,14 +353,14 @@ class DownloadFlow:
             lines.extend(f"• `{name}` — {format_size(size)}" for name, size in saved)
             await self.message.channel.send("\n".join(lines))
         except (OSError, discord.HTTPException) as exc:
-            LOGGER.exception("下載附件失敗")
+            LOGGER.exception("Attachment download failed")
             await self._notify_error(f"下載失敗：{exc}")
 
     async def _notify_error(self, detail: str) -> None:
         try:
             await self.message.channel.send(f"⚠️ {detail}")
         except discord.HTTPException:
-            LOGGER.exception("無法傳送錯誤通知")
+            LOGGER.exception("Failed to send error notification")
 
 
 def main() -> None:
@@ -398,12 +398,12 @@ def main() -> None:
 
     @bot.event
     async def on_ready() -> None:
-        LOGGER.info("已登入 Discord：%s (ID: %s)", bot.user, bot.user.id if bot.user else "?")
+        LOGGER.info("Logged in to Discord (bot ID: %s)", bot.user.id if bot.user else "unknown")
         try:
             synced = await command_tree.sync()
-            LOGGER.info("已同步 %s 個應用程式指令", len(synced))
+            LOGGER.info("Synced %s application command(s)", len(synced))
         except discord.HTTPException:
-            LOGGER.exception("同步應用程式指令失敗")
+            LOGGER.exception("Failed to sync application commands")
 
     @bot.event
     async def on_message(message: discord.Message) -> None:
@@ -422,7 +422,7 @@ def main() -> None:
         try:
             await flow.start()
         except discord.HTTPException:
-            LOGGER.exception("無法建立下載互動選單")
+            LOGGER.exception("Failed to create download menu")
 
     bot.run(active_settings.token, log_handler=None)
 

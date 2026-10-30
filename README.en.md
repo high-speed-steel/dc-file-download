@@ -25,7 +25,7 @@ This bot processes attachment messages sent by the single Discord user configure
    ```
 
    If PowerShell blocks script activation, run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` in that window and activate again. The setting ends when the window closes. Alternatively, skip activation and run `& .venv\Scripts\python.exe -m pip install -r requirements.txt`, then start the bot with `& .venv\Scripts\python.exe bot.py`.
-5. Start it with `python bot.py`. The log message “已登入 Discord” means the bot connected. Keep the terminal open while it runs.
+5. Start it with `python bot.py`. The log message `Logged in to Discord` means the bot connected. Terminal logs are in English. Keep the terminal open while it runs.
 6. Send an attachment to the bot in a Discord DM. First choose a saved path, enter a path manually, or select **直接下載** (Download now) to save immediately under the first default path in a `YYYY-MM-DD` folder. The second step offers the base folder, a date folder, or a custom folder. Both menus have a Cancel button. Close a manual-entry modal with its top-right **X**, then you can still cancel from the original menu. Cancelling stops the batch without downloading or invoking timeout fallback. If the flow times out, files go into a date folder under the first default path.
 7. After editing saved paths or the timeout in `config.json`, run `/reload` in Discord to apply the settings without restarting. Only the account configured as `allowed_user_id` can use this command.
 

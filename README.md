@@ -27,7 +27,7 @@
    ```
 
    若 PowerShell 阻止啟用腳本，可在目前視窗執行 `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`，再重新啟用虛擬環境；關閉視窗後此設定即失效。也可略過啟用，直接用 `& .venv\Scripts\python.exe -m pip install -r requirements.txt` 安裝，再以 `& .venv\Scripts\python.exe bot.py` 執行。
-5. 啟動：`python bot.py`。看到「已登入 Discord」表示 Bot 已連線。保持視窗開啟即持續運作。
+5. 啟動：`python bot.py`。看到 `Logged in to Discord` 表示 Bot 已連線。終端機日誌使用英文；保持視窗開啟即持續運作。
 6. 在自己的 Discord 私訊 Bot 傳送帶附件的訊息。第一階段可選常用路徑、手動輸入路徑，或按「直接下載」立即存到第一筆預設路徑下的 `YYYY-MM-DD` 資料夾；第二階段可選直接存入、日期資料夾或自訂資料夾。兩階段選單都有取消按鈕。打開手動輸入視窗後，可使用 Discord 視窗右上角 X 關閉，之後仍可按原選單的取消。取消後不會下載，也不會觸發逾時自動存檔。若未取消且逾時，附件自動進入第一個預設路徑下的 `YYYY-MM-DD` 資料夾。
 7. 修改 `config.json` 的常用路徑或逾時秒數後，在 Discord 輸入 `/reload` 並執行，即可套用新設定，不必重啟 Bot。此指令只允許 `allowed_user_id` 對應的帳號使用。
 
