@@ -1,5 +1,5 @@
 START:
-Start-Process .\venv\Scripts\pythonw.exe -ArgumentList "bot.py"
+Start-Process pythonw -ArgumentList "bot.py"
 
 STOP:
 Stop-Process -Name "pythonw"
